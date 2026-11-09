@@ -1,98 +1,323 @@
-<!DOCTYPE html>
+html = r'''<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101827">
 <title>My Personal Cloud</title>
-
 <style>
-* {
-    box-sizing: border-box;
-}
-
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #101827;
-    color: white;
-}
-
-header {
-    padding: 25px;
-    background: #192438;
-    text-align: center;
-}
-
-header h1 {
-    color: #60a5fa;
-}
-
-.container {
-    max-width: 800px;
-    margin: 40px auto;
-    padding: 20px;
-}
-
-.card {
-    background: #1e293b;
-    padding: 25px;
-    border-radius: 15px;
-    margin-bottom: 20px;
-    text-align: center;
-}
-
-button {
-    background: #2563eb;
-    color: white;
-    border: none;
-    padding: 13px 25px;
-    border-radius: 8px;
-    font-size: 16px;
-}
-
-footer {
-    text-align: center;
-    color: #94a3b8;
-    padding: 20px;
-}
+:root{color-scheme:dark;--bg:#101827;--panel:#1e293b;--panel2:#263449;--text:#f8fafc;--muted:#b8c4d6;--blue:#3478f6;--line:#35445b;--red:#ef6262;--green:#31b879}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{padding:28px 18px;text-align:center;background:#19263b;border-bottom:1px solid var(--line)}
+header h1{margin:0;color:#70a9ff;font-size:clamp(25px,5vw,38px)}
+header p{margin:8px 0 0;color:var(--muted)}
+main{max-width:900px;margin:22px auto;padding:0 14px 40px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;margin:16px 0}
+h2{font-size:21px;margin:0 0 14px}
+button,.button{border:0;border-radius:11px;padding:12px 17px;background:var(--blue);color:white;font-size:15px;font-weight:650;cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}
+.secondary{background:var(--panel2);border:1px solid #52627a}
+.danger{background:#8f3038}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.status{color:var(--muted);font-size:14px;line-height:1.5;margin-top:12px;overflow-wrap:anywhere}
+.note{background:#332d1c;border:1px solid #66552c;padding:12px;border-radius:10px;color:#f8e6b3;font-size:13px;line-height:1.5}
+input[type=file]{display:block;width:100%;margin:12px 0;color:var(--muted)}
+input[type=search]{flex:1;min-width:160px;padding:12px;border-radius:10px;border:1px solid var(--line);background:#111c2d;color:var(--text);font-size:15px}
+.progress{height:9px;background:#0c1422;border-radius:99px;overflow:hidden;margin-top:12px;display:none}
+.progress>div{height:100%;width:0;background:var(--green);transition:width .2s}
+.file{display:flex;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}
+.file:last-child{border-bottom:0}
+.fileinfo{min-width:0;flex:1}
+.filename{font-weight:650;overflow-wrap:anywhere}
+.meta{font-size:12px;color:var(--muted);margin-top:4px}
+.file button{padding:9px 12px;font-size:13px}
+.empty{color:var(--muted);padding:14px 0}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
+.hidden{display:none!important}
 </style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
-
 <body>
-
 <header>
-    <h1>☁️ MY PERSONAL CLOUD</h1>
-    <p>Your Personal Online Storage</p>
+  <h1>☁️ MY PERSONAL CLOUD</h1>
+  <p>Your private files, stored in your Google Drive</p>
 </header>
-
-<div class="container">
-
-    <div class="card">
-        <h2>Welcome to Your Cloud</h2>
-        <p>Your personal storage space is being prepared.</p>
-        <button>Get Started</button>
+<main>
+  <section class="card">
+    <h2>Google Account</h2>
+    <div class="row">
+      <button id="loginBtn" onclick="signIn()">Sign in with Google</button>
+      <button id="logoutBtn" class="secondary hidden" onclick="signOut()">Sign out</button>
+      <span id="accountLabel" class="status">Not connected</span>
     </div>
+    <p class="status" id="authStatus">Sign in with the Google account where you want to store your files.</p>
+  </section>
 
-    <div class="card">
-        <h3>📸 Photos</h3>
-        <p>Your photos will appear here.</p>
+  <section class="card">
+    <h2>Upload photos, videos and documents</h2>
+    <p class="status">Choose one or more files. They are uploaded to the Google Drive account currently connected above.</p>
+    <input id="fileInput" type="file" multiple>
+    <div class="row">
+      <button id="uploadBtn" onclick="uploadSelected()" disabled>Upload selected files</button>
+      <button class="secondary" onclick="document.getElementById('fileInput').value='';setStatus('Selection cleared.')">Clear selection</button>
     </div>
+    <div class="progress" id="progress"><div id="progressBar"></div></div>
+    <p class="status" id="uploadStatus" aria-live="polite"></p>
+  </section>
 
-    <div class="card">
-        <h3>🎬 Videos</h3>
-        <p>Your videos will appear here.</p>
+  <section class="card">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0">My Cloud Files</h2>
+      <button class="secondary" id="refreshBtn" onclick="loadFiles()" disabled>Refresh</button>
     </div>
-
-    <div class="card">
-        <h3>📁 Documents</h3>
-        <p>Your documents will appear here.</p>
+    <div class="row" style="margin:15px 0">
+      <input id="searchBox" type="search" placeholder="Search file names..." oninput="renderFiles()">
     </div>
+    <div id="fileList" class="empty">Sign in to view files uploaded through this cloud website.</div>
+    <p id="listStatus" class="status"></p>
+  </section>
 
-</div>
+  <section class="card">
+    <div class="note">
+      <strong>Important storage and safety notes</strong><br>
+      • Files are stored in your Google Drive, not inside GitHub.<br>
+      • Google account storage is shared by Drive, Gmail and Google Photos; the free allowance is limited and can change.<br>
+      • This app lists files it has permission to access (including files uploaded through this app); it may not show every existing Drive file.<br>
+      • Keep a second backup of irreplaceable files. No single online service can guarantee zero data loss.<br>
+      • Never put your OAuth Client Secret, passwords or private files in this public GitHub repository.
+    </div>
+  </section>
+</main>
+<footer>My Personal Cloud • Uses Google Drive with your permission</footer>
 
-<footer>
-    MY PERSONAL CLOUD © 2026
-</footer>
+<script>
+    http://490879485883-h2008thhg2r7eq6mvlqts1jbm98q3htp.apps.googleusercontent.com
+*/
+const CLIENT_ID = "PASTE_YOUR_OAUTH_CLIENT_ID_HERE";
+const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+let tokenClient = null;
+let accessToken = "";
+let cloudFiles = [];
 
+function setStatus(message) {
+  document.getElementById("authStatus").textContent = message;
+}
+function setSignedInUI(emailText) {
+  document.getElementById("loginBtn").classList.add("hidden");
+  document.getElementById("logoutBtn").classList.remove("hidden");
+  document.getElementById("uploadBtn").disabled = false;
+  document.getElementById("refreshBtn").disabled = false;
+  document.getElementById("accountLabel").textContent = emailText || "Google connected";
+}
+function setSignedOutUI() {
+  document.getElementById("loginBtn").classList.remove("hidden");
+  document.getElementById("logoutBtn").classList.add("hidden");
+  document.getElementById("uploadBtn").disabled = true;
+  document.getElementById("refreshBtn").disabled = true;
+  document.getElementById("accountLabel").textContent = "Not connected";
+  document.getElementById("fileList").textContent = "Sign in to view files uploaded through this cloud website.";
+  cloudFiles = [];
+}
+function initGoogleAuth() {
+  if (CLIENT_ID === "PASTE_YOUR_OAUTH_CLIENT_ID_HERE" || !CLIENT_ID.includes(".apps.googleusercontent.com")) {
+    setStatus("Setup needed: add your OAuth Client ID in index.html, then save and publish the file.");
+    return;
+  }
+  if (!window.google || !google.accounts || !google.accounts.oauth2) {
+    setTimeout(initGoogleAuth, 400);
+    return;
+  }
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: DRIVE_SCOPE,
+    callback: async (response) => {
+      if (response.error) {
+        setStatus("Google sign-in failed: " + response.error);
+        return;
+      }
+      accessToken = response.access_token;
+      setSignedInUI("Google Drive connected");
+      setStatus("Connected. You can now upload and download files.");
+      await loadFiles();
+    }
+  });
+  setStatus("Ready. Tap Sign in with Google.");
+}
+window.addEventListener("load", initGoogleAuth);
+
+function signIn() {
+  if (!tokenClient) {
+    setStatus("Google sign-in is not ready. Check the Client ID and reload the page.");
+    return;
+  }
+  tokenClient.requestAccessToken({prompt: ""});
+}
+function signOut() {
+  if (accessToken && window.google && google.accounts && google.accounts.oauth2) {
+    google.accounts.oauth2.revoke(accessToken, () => {});
+  }
+  accessToken = "";
+  setSignedOutUI();
+  setStatus("Signed out. Your files remain in Google Drive.");
+}
+async function driveFetch(url, options={}) {
+  if (!accessToken) throw new Error("Please sign in first.");
+  const headers = new Headers(options.headers || {});
+  headers.set("Authorization", "Bearer " + accessToken);
+  const response = await fetch(url, {...options, headers});
+  if (response.status === 401) {
+    accessToken = "";
+    setSignedOutUI();
+    throw new Error("Google session expired. Please sign in again.");
+  }
+  if (!response.ok) {
+    let detail = "";
+    try { detail = (await response.json()).error?.message || ""; } catch(e) {}
+    throw new Error(detail || ("Google Drive returned HTTP " + response.status));
+  }
+  return response;
+}
+function formatBytes(value) {
+  const n = Number(value || 0);
+  if (!n) return "Size unavailable";
+  const units = ["B","KB","MB","GB","TB"];
+  const i = Math.min(Math.floor(Math.log(n)/Math.log(1024)), units.length-1);
+  return (n/Math.pow(1024,i)).toFixed(i ? 1 : 0) + " " + units[i];
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+async function uploadOne(file) {
+  const metadata = {name:file.name, mimeType:file.type || "application/octet-stream"};
+  const start = await driveFetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,name,mimeType,size,createdTime,webViewLink",
+    {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json; charset=UTF-8",
+        "X-Upload-Content-Type":file.type || "application/octet-stream",
+        "X-Upload-Content-Length":String(file.size)
+      },
+      body:JSON.stringify(metadata)
+    }
+  );
+  const uploadUrl = start.headers.get("Location");
+  if (!uploadUrl) throw new Error("Google did not return an upload URL. Please retry.");
+  const result = await fetch(uploadUrl, {
+    method:"PUT",
+    headers:{
+      "Authorization":"Bearer " + accessToken,
+      "Content-Type":file.type || "application/octet-stream"
+    },
+    body:file
+  });
+  if (!result.ok) {
+    let message = "";
+    try { message = (await result.json()).error?.message || ""; } catch(e) {}
+    throw new Error(message || ("Upload failed: HTTP " + result.status));
+  }
+  return await result.json();
+}
+async function uploadSelected() {
+  const input = document.getElementById("fileInput");
+  const files = Array.from(input.files || []);
+  if (!accessToken) return setStatus("Sign in first.");
+  if (!files.length) return document.getElementById("uploadStatus").textContent = "Choose at least one file.";
+  const button = document.getElementById("uploadBtn");
+  button.disabled = true;
+  const progress = document.getElementById("progress");
+  const bar = document.getElementById("progressBar");
+  progress.style.display = "block";
+  let done = 0, errors = [];
+  for (const file of files) {
+    document.getElementById("uploadStatus").textContent =
+      `Uploading ${done+1} of ${files.length}: ${file.name} (${formatBytes(file.size)})`;
+    try {
+      await uploadOne(file);
+    } catch (err) {
+      errors.push(file.name + ": " + err.message);
+    }
+    done++;
+    bar.style.width = Math.round(done/files.length*100) + "%";
+  }
+  button.disabled = false;
+  input.value = "";
+  document.getElementById("uploadStatus").textContent =
+    errors.length ? `Finished with ${errors.length} error(s): ${errors.join(" | ")}` :
+    `Successfully uploaded ${done} file(s).`;
+  await loadFiles();
+}
+async function loadFiles() {
+  if (!accessToken) return;
+  const list = document.getElementById("fileList");
+  list.textContent = "Loading files...";
+  try {
+    let all = [], pageToken = "";
+    do {
+      const params = new URLSearchParams({
+        pageSize:"100",
+        orderBy:"createdTime desc",
+        fields:"nextPageToken,files(id,name,mimeType,size,createdTime,webViewLink)"
+      });
+      if (pageToken) params.set("pageToken", pageToken);
+      const response = await driveFetch("https://www.googleapis.com/drive/v3/files?" + params.toString());
+      const data = await response.json();
+      all = all.concat(data.files || []);
+      pageToken = data.nextPageToken || "";
+    } while (pageToken);
+    cloudFiles = all;
+    renderFiles();
+    document.getElementById("listStatus").textContent =
+      `${cloudFiles.length} accessible file(s).`;
+  } catch(err) {
+    list.textContent = err.message;
+  }
+}
+function renderFiles() {
+  const list = document.getElementById("fileList");
+  const query = document.getElementById("searchBox").value.trim().toLowerCase();
+  const filtered = cloudFiles.filter(f => f.name.toLowerCase().includes(query));
+  if (!filtered.length) {
+    list.className = "empty";
+    list.textContent = cloudFiles.length ? "No matching files." : "No files uploaded through this app yet.";
+    return;
+  }
+  list.className = "";
+  list.innerHTML = filtered.map(f => `
+    <div class="file">
+      <div class="fileinfo">
+        <div class="filename">${escapeHtml(f.name)}</div>
+        <div class="meta">${escapeHtml(f.mimeType || "File")} • ${formatBytes(f.size)} • ${f.createdTime ? new Date(f.createdTime).toLocaleDateString() : ""}</div>
+      </div>
+      <button class="secondary" onclick="downloadFile('${encodeURIComponent(f.id)}','${encodeURIComponent(f.name)}')">Download</button>
+      <button class="secondary" onclick="openInDrive('${encodeURIComponent(f.id)}')">Open</button>
+    </div>`).join("");
+}
+async function downloadFile(encodedId, encodedName) {
+  const id = decodeURIComponent(encodedId), name = decodeURIComponent(encodedName);
+  try {
+    document.getElementById("listStatus").textContent = "Preparing download: " + name;
+    const response = await driveFetch("https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(id) + "?alt=media");
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    document.getElementById("listStatus").textContent = "Download started: " + name;
+  } catch(err) {
+    document.getElementById("listStatus").textContent = err.message;
+  }
+}
+function openInDrive(encodedId) {
+  const id = decodeURIComponent(encodedId);
+  window.open("https://drive.google.com/file/d/" + encodeURIComponent(id) + "/view", "_blank", "noopener");
+}
+</script>
 </body>
-</html>
+</html>'''
+path = "/mnt/data/index.html"
+with open(path, "w", encoding="utf-8") as f:
+    f.write(html)
+print(path, len(html))
